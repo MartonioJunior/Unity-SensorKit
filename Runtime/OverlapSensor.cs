@@ -6,24 +6,25 @@ namespace ThreeDISevenZeroR.SensorKit
     /// <para>Abstract class for any overlap sensor</para>
     /// <para>Overlap sensor can detect objects at specified location</para>
     /// </summary>
-    public abstract class OverlapSensor : PhysicsSensor
+    public abstract class OverlapSensor: PhysicsSensor
     {
+        #region Abstract
+        protected abstract int DoOverlapCheck(Vector3 center, Collider[] colliders);
+        #endregion
+        #region MonoBehaviour Lifecycle
         private void Start()
         {
-            if (!lazyAllocation)
-            {
-                EnsureArrayCapacity(ref hitColliders);
-            }
+            if (!lazyAllocation) EnsureArrayCapacity(ref hitColliders);
         }
-
+        #endregion
+        #region PhysicsSensor Implementation
         public override int UpdateSensor()
         {
             EnsureArrayCapacity(ref hitColliders);
             hitCount = DoOverlapCheck(transform.position, hitColliders);
             return hitCount;
         }
-
-        protected abstract int DoOverlapCheck(Vector3 center, Collider[] colliders);
+        #endregion
 
 #if UNITY_EDITOR
         private static Collider[] gizmoCollider = new Collider[1];

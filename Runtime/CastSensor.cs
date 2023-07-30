@@ -6,39 +6,28 @@ namespace ThreeDISevenZeroR.SensorKit
     /// <para>Abstract class for any cast sensor</para>
     /// <para>Cast sensor can detect objects at specified distance</para>
     /// </summary>
-    public abstract class CastSensor : PhysicsSensor
+    public abstract class CastSensor: PhysicsSensor
     {
-        private static readonly RaycastHit[] emptyRayHits = new RaycastHit[0];
-
+        #region Variables
         /// <summary>
         /// <para>Transform which overrides ray cast direction. Makes possible to cast rotated shapes</para>
         /// <para>If null, uses sensor object for direction</para>
         /// </summary>
-        [Tooltip("Transform which overrides ray cast direction. Makes possible to cast rotated shapes\n" +
-                 "If null, uses sensor object for direction")]
+        [Tooltip("Transform which overrides ray cast direction. Makes possible to cast rotated shapes\nIf null, uses sensor object for direction")]
         public Transform rayDirectionOverride;
-        
         /// <summary>
         /// <para>Maximum cast distance</para>
         /// </summary>
         [Tooltip("Maximum cast distance")]
         public float maxDistance = Mathf.Infinity;
-
-        private RaycastHit[] rayHits = emptyRayHits;
+        private RaycastHit[] rayHits = new RaycastHit[0];
         private bool outdatedColliders;
-
+        #endregion
+        #region Properties
         /// <summary>
         /// <para>Actual ray that will be fired on update</para>
         /// </summary>
-        public Ray Ray
-        {
-            get
-            {
-                return new Ray(transform.position, CastDirection *
-                               new Vector3(0, 0, transform.lossyScale.z > 0 ? 1 : -1));
-            }
-        }
-
+        public Ray Ray => new Ray(transform.position, CastDirection * new Vector3(0, 0, transform.lossyScale.z > 0 ? 1 : -1));
         /// <summary>
         /// <para>Array with all hits that have been detected during sensor update</para>
         /// <para>This array is cached, and guaranteed to be at least HitCount long</para>
@@ -51,19 +40,11 @@ namespace ThreeDISevenZeroR.SensorKit
                 return rayHits;
             }
         }
-
         /// <summary>
         /// <para>Returns first RayHit</para>
         /// <para>Convenience method when maxCount is 1</para>
         /// </summary>
-        public RaycastHit RayHit
-        {
-            get
-            {
-                return HitCount > 0 ? RayHits[0] : default(RaycastHit);
-            }
-        }
-
+        public RaycastHit RayHit => HitCount > 0 ? RayHits[0] : default(RaycastHit);
         /// <summary>
         /// <para>Returns closest RayHit</para>
         /// <para>Since NonAlloc methods returns array with no order,
@@ -71,27 +52,17 @@ namespace ThreeDISevenZeroR.SensorKit
         /// </summary>
         public RaycastHit ClosestRayHit
         {
-            get
-            {
-                if (hitCount == 1)
-                {
-                    return rayHits[0];
-                }
-
-                if (hitCount == 0)
-                {
-                    return default(RaycastHit);
-                }
+            get {
+                if (hitCount == 1) return rayHits[0];
+                if (hitCount == 0) return default(RaycastHit);
 
                 var closestIndex = 0;
                 var closestDistance = float.MaxValue;
 
-                for (var i = 0; i < hitCount; i++)
-                {
+                for (var i = 0; i < hitCount; i++) {
                     var distance = rayHits[i].distance;
 
-                    if (distance < closestDistance)
-                    {
+                    if (distance < closestDistance) {
                         closestIndex = i;
                         closestDistance = distance;
                     }
@@ -100,30 +71,21 @@ namespace ThreeDISevenZeroR.SensorKit
                 return rayHits[closestIndex];
             }
         }
-
         /// <summary>
         /// <para>Direction in which ray will be casted</para>
         /// <para>Either rotation used by this object, or rotation from rayDirectionOverride</para>
         /// </summary>
-        public Quaternion CastDirection
-        {
-            get { return rayDirectionOverride ? rayDirectionOverride.rotation : transform.rotation; }
-        }
-        
+        public Quaternion CastDirection => rayDirectionOverride ? rayDirectionOverride.rotation : transform.rotation;
+
         /// <summary>
         /// <para>Actual distance of cast, with respect of object scale</para>
         /// </summary>
-        public float CastDistance
-        {
-            get { return PhysicsSensorUtils.GetCastDistance(maxDistance, transform.lossyScale); }
-        }
-        
+        public float CastDistance => PhysicsSensorUtils.GetCastDistance(maxDistance, transform.lossyScale);
+
         public override Collider[] HitColliders
         {
-            get
-            {
-                if (outdatedColliders)
-                {
+            get {
+                if (outdatedColliders) {
                     UpdateCollidersArray();
                     outdatedColliders = false;
                 }
@@ -131,16 +93,20 @@ namespace ThreeDISevenZeroR.SensorKit
                 return hitColliders;
             }
         }
-
+        #endregion
+        #region Abstract
+        protected abstract int DoCast(Ray ray, RaycastHit[] hit);
+        #endregion
+        #region MonoBehaviour Lifecycle
         private void Start()
         {
-            if (!lazyAllocation)
-            {
+            if (!lazyAllocation) {
                 EnsureArrayCapacity(ref hitColliders);
                 EnsureArrayCapacity(ref rayHits);
             }
         }
-
+        #endregion
+        #region PhysicsSensor Implementation
         public override int UpdateSensor()
         {
             EnsureArrayCapacity(ref hitColliders);
@@ -149,21 +115,22 @@ namespace ThreeDISevenZeroR.SensorKit
             outdatedColliders = true;
             return hitCount;
         }
-
+        #endregion
+        #region Methods
         private void UpdateCollidersArray()
         {
-            for (var i = 0; i < hitCount; i++)
-            {
+            var i = 0;
+            while (i < hitCount) {
                 hitColliders[i] = rayHits[i].collider;
+                i++;
             }
 
-            for (var i = hitCount; i < hitColliders.Length; i++)
-            {
+            while (i < hitColliders.Length) {
                 hitColliders[i] = null;
+                i++;
             }
         }
-
-        protected abstract int DoCast(Ray ray, RaycastHit[] hit);
+        #endregion
 
 #if UNITY_EDITOR
 
